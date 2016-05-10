@@ -81,7 +81,7 @@ object KafkaSource extends LazyLogging {
 
     nextOffsetsToSave match {
       case Some(offsets) =>
-        logger.debug("Writing previous offsets to Zookeeper: ${offsets}")
+        logger.debug(s"Writing previous offsets to Zookeeper: ${offsets}")
         ZkUtils.updatePersistentPath(zkClient, zkPath, offsets)
       case None =>
         logger.debug("Not writing offsets to Zookeeper for now")
