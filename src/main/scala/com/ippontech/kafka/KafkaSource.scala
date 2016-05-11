@@ -13,9 +13,6 @@ import org.apache.spark.streaming.kafka.{HasOffsetRanges, KafkaUtils}
 
 object KafkaSource extends LazyLogging {
 
-  //FIXME: only supports reading from one Kafka topic
-  var nextOffsetsToSave: Option[String] = None
-
   // Kafka input stream
   def kafkaStream(ssc: StreamingContext, brokers: String, zkHosts: String, zkPath: String,
                   topic: String): InputDStream[(String, String)] = {
@@ -79,17 +76,10 @@ object KafkaSource extends LazyLogging {
     val offsetsRanges = rdd.asInstanceOf[HasOffsetRanges].offsetRanges
     offsetsRanges.foreach(offsetRange => logger.debug(s"Using ${offsetRange}"))
 
-    nextOffsetsToSave match {
-      case Some(offsets) =>
-        logger.debug(s"Writing previous offsets to Zookeeper: ${offsets}")
-        ZkUtils.updatePersistentPath(zkClient, zkPath, offsets)
-      case None =>
-        logger.debug("Not writing offsets to Zookeeper for now")
-    }
-
-    val offsetsRangesStr = offsetsRanges.map(offsetRange => s"${offsetRange.partition}:${offsetRange.untilOffset}")
+    val offsetsRangesStr = offsetsRanges.map(offsetRange => s"${offsetRange.partition}:${offsetRange.fromOffset}")
       .mkString(",")
-    nextOffsetsToSave = Some(offsetsRangesStr)
+    logger.debug(s"Writing offsets to Zookeeper: ${offsetsRangesStr}")
+    ZkUtils.updatePersistentPath(zkClient, zkPath, offsetsRangesStr)
 
     logger.info("Done updating offsets in Zookeeper. Took " + stopwatch)
   }
