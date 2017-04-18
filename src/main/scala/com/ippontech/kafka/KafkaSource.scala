@@ -12,12 +12,10 @@ import scala.reflect.ClassTag
 
 object KafkaSource extends LazyLogging {
 
-  // Kafka input stream
   def kafkaStream[K: ClassTag, V: ClassTag, KD <: Decoder[K] : ClassTag, VD <: Decoder[V] : ClassTag]
-  (ssc: StreamingContext, brokers: String, offsetsStore: OffsetsStore, topic: String): InputDStream[(K, V)] = {
+  (ssc: StreamingContext, kafkaParams: Map[String, String], offsetsStore: OffsetsStore, topic: String): InputDStream[(K, V)] = {
 
     val topics = Set(topic)
-    val kafkaParams = Map("metadata.broker.list" -> brokers)
 
     val storedOffsets = offsetsStore.readOffsets(topic)
     val kafkaStream = storedOffsets match {
@@ -35,5 +33,10 @@ object KafkaSource extends LazyLogging {
 
     kafkaStream
   }
+
+  // Kafka input stream
+  def kafkaStream[K: ClassTag, V: ClassTag, KD <: Decoder[K] : ClassTag, VD <: Decoder[V] : ClassTag]
+  (ssc: StreamingContext, brokers: String, offsetsStore: OffsetsStore, topic: String): InputDStream[(K, V)] =
+    kafkaStream(ssc, Map("metadata.broker.list" -> brokers), offsetsStore, topic)
 
 }
